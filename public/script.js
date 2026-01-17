@@ -1,3 +1,9 @@
+/**
+ * VISHWA-SETU ULTIMATE ENGINE V6
+ * DEVELOPED BY: AMAR KUMAR
+ * FEATURE: REAL-TIME WEBRTC + GEMINI AI TRANSLATION
+ */
+
 const socket = io();
 const GEMINI_API_KEY = "AIzaSyDUVk7aSZ9TvsI9YsyuUXTarSMbhHReurk";
 const localVideo = document.getElementById('localVideo');
@@ -7,27 +13,34 @@ const subtitleArea = document.getElementById('subtitle-area');
 let myStream;
 let peerConnection;
 let myLang, friendLang;
+let isCallStarted = false;
 
-// --- WebRTC Configuration (Google's Free Servers) ---
-const config = {
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+// 1. Google's Global STUN Servers (Free & Strong)
+const iceConfig = {
+    iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" }
+    ]
 };
 
-// 1. Get Room ID from URL
+// 2. Room ID Management (URL Based)
 const urlParams = new URLSearchParams(window.location.search);
 let roomId = urlParams.get('room');
 
 if (!roomId) {
-    roomId = Math.random().toString(36).substring(7);
+    // Agar koi link nahi hai, toh naya link banao
+    roomId = Math.random().toString(36).substring(2, 9);
     const newUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}?room=${roomId}`;
     document.getElementById('roomLink').innerText = newUrl;
     document.getElementById('link-box').style.display = 'block';
 } else {
-    document.getElementById('link-box').innerHTML = "<p style='color:#00f3ff'>Dost ka intezar ho raha hai...</p>";
+    // Agar link se aaya hai, toh message dikhao
+    document.getElementById('link-box').innerHTML = "<p style='color:#00f3ff; font-weight:bold;'>SYNCING WITH AMAR'S NEURAL GRID...</p>";
     document.getElementById('link-box').style.display = 'block';
 }
 
-// 2. Start Call Function
+// 3. Start Call Function
 async function initCall() {
     myLang = document.getElementById('myLang').value;
     friendLang = document.getElementById('friendLang').value;
@@ -35,24 +48,30 @@ async function initCall() {
     document.getElementById('main-stage').style.display = 'flex';
 
     try {
+        console.log(">>> [LOG]: Camera/Mic setup shuru ho raha hai...");
         myStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         localVideo.srcObject = myStream;
         
+        // Server ko batana ki hum ready hain
         socket.emit('join-room', roomId, socket.id);
-        startRecognition();
+        
+        // AI Translation chalu karna
+        startAIEngine();
+        isCallStarted = true;
     } catch (err) {
-        alert("Camera aur Mic on kijiye bhai!");
+        console.error(err);
+        alert("Bhai, Camera aur Mic ki permission ke bina ye nahi chalega!");
     }
 }
 
-// 3. WebRTC Signaling Logic (Real Connection)
+// 4. WebRTC Signaling (The Handshake)
 socket.on('user-connected', async (userId) => {
-    console.log("Naya dost jud gaya: " + userId);
-    createPeerConnection(userId, true);
+    console.log(">>> [LOG]: Naya user connect hua: " + userId);
+    setupPeer(userId, true);
 });
 
 socket.on('signal', async (data) => {
-    if (!peerConnection) createPeerConnection(data.from, false);
+    if (!peerConnection) setupPeer(data.from, false);
     
     if (data.signal.type === 'offer') {
         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.signal));
@@ -62,29 +81,32 @@ socket.on('signal', async (data) => {
     } else if (data.signal.type === 'answer') {
         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.signal));
     } else if (data.signal.candidate) {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(data.signal));
+        try {
+            await peerConnection.addIceCandidate(new RTCIceCandidate(data.signal));
+        } catch (e) { console.warn("ICE Candidate failed, ignoring..."); }
     }
 });
 
-function createPeerConnection(userId, isOffer) {
-    peerConnection = new RTCPeerConnection(config);
+function setupPeer(userId, isInitiator) {
+    peerConnection = new RTCPeerConnection(iceConfig);
 
-    // Add local stream
+    // Apne Video Tracks add karna
     myStream.getTracks().forEach(track => peerConnection.addTrack(track, myStream));
 
-    // Receive remote stream
+    // Saamne wale ka Video receive karna
     peerConnection.ontrack = (event) => {
+        console.log(">>> [LOG]: Dost ka video mil gaya!");
         remoteVideo.srcObject = event.streams[0];
     };
 
-    // ICE Candidates
+    // Network paths dhoondhna
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
             socket.emit('signal', { to: userId, signal: event.candidate });
         }
     };
 
-    if (isOffer) {
+    if (isInitiator) {
         peerConnection.onnegotiationneeded = async () => {
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
@@ -93,40 +115,59 @@ function createPeerConnection(userId, isOffer) {
     }
 }
 
-// 4. AI Translation Engine (Gemini)
-function startRecognition() {
+// 5. AI Voice Engine (Gemini Translation)
+function startAIEngine() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+        subtitleArea.innerText = "Error: Browser Speech Support Missing.";
+        return;
+    }
 
     const recognition = new SpeechRecognition();
     recognition.lang = myLang;
     recognition.continuous = true;
+    recognition.interimResults = false;
+
     recognition.onresult = async (event) => {
-        const text = event.results[event.results.length - 1][0].transcript;
-        translateAndSpeak(text);
+        const lastIndex = event.results.length - 1;
+        const speechText = event.results[lastIndex][0].transcript;
+        console.log(">>> [SPEECH]: " + speechText);
+        
+        processTranslation(speechText);
     };
+
+    recognition.onerror = (e) => console.error("Speech Error: ", e);
+    recognition.onend = () => { if(isCallStarted) recognition.start(); }; // Auto restart
+    
     recognition.start();
 }
 
-async function translateAndSpeak(text) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+async function processTranslation(text) {
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    
     try {
-        const response = await fetch(url, {
+        const response = await fetch(apiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: `Translate the following text to ${friendLang}. Only provide the translation, nothing else: "${text}"` }] }]
+                contents: [{ parts: [{ text: `Translate this text to the language code ${friendLang}. Provide ONLY the translated text: "${text}"` }] }]
             })
         });
+
         const data = await response.json();
-        const translatedText = data.candidates[0].content.parts[0].text;
+        const translated = data.candidates[0].content.parts[0].text;
         
-        subtitleArea.innerText = `Me: ${text} \n AI (${friendLang}): ${translatedText}`;
+        // Subtitles dikhana
+        subtitleArea.innerHTML = `<span style="color:var(--gold)">Me:</span> ${text} <br> <span style="color:var(--neon)">AI:</span> ${translated}`;
         
-        const utterance = new SpeechSynthesisUtterance(translatedText);
-        utterance.lang = friendLang;
-        window.speechSynthesis.speak(utterance);
+        // Bol kar batana (AI Voice)
+        const speech = new SpeechSynthesisUtterance(translated);
+        speech.lang = friendLang;
+        window.speechSynthesis.speak(speech);
+
     } catch (err) {
-        console.error("AI Link Error");
+        console.error("Gemini API Error: ", err);
+        subtitleArea.innerText = "AI Translation Link Error. Check API Key.";
     }
-                        }
+                    }
+    
