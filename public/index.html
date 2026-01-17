@@ -3,69 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vishwa-Setu | Amar Kumar</title>
+    <title>Vishwa-Setu Pro | Amar Kumar</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root { --neon: #00f3ff; --gold: #ffcc00; --bg: #050508; --blue-tick: #1da1f2; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { 
-            margin: 0; background: var(--bg); color: white; 
-            font-family: 'Rajdhani', sans-serif; height: 100vh; display: flex; flex-direction: column;
-        }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Rajdhani', sans-serif; height: 100vh; display: flex; flex-direction: column; }
 
-        /* --- AMAR KUMAR BRANDING --- */
-        header {
-            padding: 15px; background: rgba(0,0,0,0.9); border-bottom: 2px solid var(--neon);
-            display: flex; justify-content: center; align-items: center; z-index: 100;
-        }
-        .dev-brand {
-            font-family: 'Orbitron', sans-serif; color: var(--gold); font-size: 1rem;
-            display: flex; align-items: center; letter-spacing: 1px;
-        }
-        .tick {
-            margin-left: 8px; width: 18px; height: 18px; background: var(--blue-tick);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 10px; box-shadow: 0 0 12px var(--blue-tick); animation: pulse 2s infinite;
-        }
+        header { padding: 15px; background: rgba(0,0,0,0.9); border-bottom: 2px solid var(--neon); display: flex; justify-content: center; align-items: center; z-index: 100; }
+        .dev-brand { font-family: 'Orbitron', sans-serif; color: var(--gold); font-size: 1rem; display: flex; align-items: center; letter-spacing: 1px; }
+        .tick { margin-left: 8px; width: 18px; height: 18px; background: var(--blue-tick); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; box-shadow: 0 0 12px var(--blue-tick); animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
-        /* --- CALL SCREEN --- */
-        #main-stage { flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 15px; }
-        .video-grid { display: flex; flex-direction: column; gap: 10px; height: 60%; }
-        .video-box { 
-            flex: 1; background: #111; border: 1px solid #222; border-radius: 15px; 
-            overflow: hidden; position: relative;
-        }
+        #main-stage { flex: 1; display: flex; flex-direction: column; padding: 10px; gap: 10px; display: none; }
+        .video-grid { display: flex; flex-direction: column; gap: 10px; height: 65%; }
+        .video-box { flex: 1; background: #111; border: 1px solid #222; border-radius: 15px; overflow: hidden; position: relative; }
         video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* --- LIVE SUBTITLES --- */
-        #subtitle-area {
-            height: 80px; background: rgba(255,255,255,0.05); border-radius: 10px;
-            padding: 10px; font-size: 1.1rem; border-left: 4px solid var(--neon);
-            overflow-y: auto; text-align: center;
-        }
+        #subtitle-area { height: 70px; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 10px; font-size: 1.1rem; border-left: 4px solid var(--neon); overflow-y: auto; text-align: center; }
 
-        /* --- CONTROLS --- */
-        .controls {
-            display: flex; justify-content: center; gap: 15px; padding: 20px;
-            background: #000; border-top: 1px solid #222;
-        }
-        .btn {
-            width: 50px; height: 50px; border-radius: 50%; border: none;
-            background: #222; color: white; font-size: 1.2rem;
-        }
+        .controls { display: flex; justify-content: center; gap: 15px; padding: 15px; background: #000; border-top: 1px solid #222; }
+        .btn { width: 50px; height: 50px; border-radius: 50%; border: none; background: #222; color: white; font-size: 1.2rem; cursor: pointer; }
+        .btn.active { background: var(--neon); color: black; }
         .btn-call { background: #ff4757; width: 65px; border-radius: 30px; }
-        
-        /* --- SETUP MODAL --- */
-        #setup {
-            position: fixed; inset: 0; background: var(--bg); z-index: 500;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
-        }
-        select, .start-btn {
-            width: 100%; max-width: 300px; padding: 15px; margin: 10px;
-            border-radius: 10px; background: #111; color: white; border: 1px solid var(--neon);
-        }
+
+        #setup { position: fixed; inset: 0; background: var(--bg); z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+        select, .start-btn { width: 100%; max-width: 300px; padding: 15px; margin: 10px; border-radius: 10px; background: #111; color: white; border: 1px solid var(--neon); }
         .start-btn { background: var(--neon); color: black; font-weight: bold; font-family: 'Orbitron'; }
+
+        #link-box { margin-top: 15px; padding: 10px; background: #111; border: 1px dashed var(--gold); border-radius: 8px; display: none; word-break: break-all; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -75,12 +41,11 @@
 </header>
 
 <div id="setup">
-    <h2 style="color: var(--gold); font-family: 'Orbitron';">VISHWA-SETU SETUP</h2>
+    <h2 style="color: var(--gold); font-family: 'Orbitron';">VISHWA-SETU</h2>
     <p>Apni bhasha chunein:</p>
     <select id="myLang">
         <option value="hi-IN">Hindi (India)</option>
         <option value="en-US">English (US)</option>
-        <option value="ta-IN">Tamil (India)</option>
     </select>
     <p>Dost ki bhasha chunein:</p>
     <select id="friendLang">
@@ -88,7 +53,12 @@
         <option value="ru-RU">Russian (Russia)</option>
         <option value="hi-IN">Hindi (India)</option>
     </select>
-    <button class="start-btn" onclick="initCall()">BRIDGE CONNECT KAREIN</button>
+    <button class="start-btn" onclick="initCall()">BRIDGE START KAREIN</button>
+    
+    <div id="link-box">
+        <p style="color: var(--gold);">Dost ko ye link bhejye:</p>
+        <span id="roomLink"></span>
+    </div>
 </div>
 
 <div id="main-stage">
@@ -100,13 +70,12 @@
 </div>
 
 <div class="controls">
-    <button class="btn">🎤</button>
-    <button class="btn">📷</button>
-    <button class="btn btn-call">OFF</button>
+    <button class="btn active" id="micBtn" onclick="toggleMic()">🎤</button>
+    <button class="btn active" id="camBtn" onclick="toggleCam()">📷</button>
+    <button class="btn btn-call" onclick="window.location.reload()">OFF</button>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="script.js"></script>
 </body>
-                                                                                </html>
-                                                                                
+</html>
